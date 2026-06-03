@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VEO STUDIO — Prompt Builder</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  ::selection { background: #ff4d00; color: #0a0a0a; }
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: #111; }
+  ::-webkit-scrollbar-thumb { background: #333; }
+
+  body {
+    min-height: 100vh;
+    background: #0a0a0a;
+    color: #e8e0d4;
+    font-family: 'DM Mono', 'Courier New', monospace;
+  }
+
+  /* HEADER */
+  .header {
+    padding: 32px 40px 0;
+    border-bottom: 1px solid #1e1e1e;
+  }
+  .header-inner {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding-bottom: 24px;
+  }
+  .header-label {
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #444;
+    margin-bottom: 8px;
+  }
+  .header-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(40px, 6vw, 72px);
+    line-height: 0.9;
+  }
+  .header-title .accent { color: #ff4d00; }
+  .counter-label { font-size: 10px; color: #333; margin-bottom: 4px; text-align: right; }
+  .counter-val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px;
+    color: #222;
+    transition: color 0.3s;
+  }
+  .counter-val.active { color: #ff4d00; }
+  .counter-val span { color: #222; font-size: 20px; }
+
+  .progress-bar { height: 2px; background: #1e1e1e; }
+  .progress-fill { height: 100%; background: #ff4d00; transition: width 0.3s; width: 0%; }
+
+  /* MAIN */
+  .main { max-width: 900px; margin: 0 auto; padding: 0 40px 60px; }
+
+  /* AI BAR */
+  .ai-section { padding: 28px 0 20px; }
+  .section-label {
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #444;
+    margin-bottom: 10px;
+  }
+  .ai-bar { display: flex; border: 1px solid #1e1e1e; }
+  .ai-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #e8e0d4;
+    font-family: inherit;
+    font-size: 13px;
+    padding: 14px 16px;
+  }
+  .ai-input::placeholder { color: #2e2e2e; }
+  .ai-suggestion { margin-top: 8px; font-size: 11px; color: #555; font-style: italic; display: none; }
+
+  /* FIELDS */
+  .fields-block { border: 1px solid #1e1e1e; margin-bottom: 24px; }
+  .field-row { display: grid; grid-template-columns: 80px 1fr; border-bottom: 1px solid #1e1e1e; }
+  .field-row:last-child { border-bottom: none; }
+  .field-label-col {
+    padding: 16px 12px;
+    border-right: 1px solid #1e1e1e;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    background: #0d0d0d;
+  }
+  .field-icon { font-size: 18px; color: #ff4d00; line-height: 1; }
+  .field-name { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: #555; font-weight: 500; }
+  .field-input-wrap { display: flex; align-items: center; flex: 1; position: relative; }
+
+  .field-input {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #e8e0d4;
+    font-family: inherit;
+    font-size: 13px;
+    padding: 16px;
+    width: 100%;
+    resize: none;
+    line-height: 1.5;
+    transition: background 0.15s;
+  }
+  .field-input:focus { background: #0f0f0f; }
+  .field-input::placeholder { color: #2e2e2e; }
+
+  .field-select {
+    background: #0a0a0a;
+    border: none;
+    outline: none;
+    color: #e8e0d4;
+    font-family: inherit;
+    font-size: 13px;
+    padding: 16px;
+    width: 100%;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23444'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+  }
+  .field-select:focus { background-color: #0f0f0f; }
+  .field-select option { background: #1a1a1a; color: #e8e0d4; }
+
+  /* ASPECT */
+  .aspect-section { margin-bottom: 28px; }
+  .aspect-btn {
+    background: transparent;
+    border: 1px solid #1e1e1e;
+    color: #555;
+    font-family: inherit;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .aspect-btn.active { border-color: #ff4d00; color: #ff4d00; }
+  .aspect-btn:hover:not(.active) { border-color: #333; color: #999; }
+  .aspect-row { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  /* MORPHING */
+  .morph-section { margin-bottom: 28px; }
+  .morph-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  .morph-reset {
+    background: none;
+    border: none;
+    color: #555;
+    cursor: pointer;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-family: inherit;
+    display: none;
+  }
+  .morph-reset:hover { color: #e8e0d4; }
+  .morph-cat-label {
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin: 16px 0 10px;
+  }
+  .morph-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px; }
+  .morph-card {
+    border: 1px solid #1e1e1e;
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: transparent;
+    text-align: left;
+    color: #e8e0d4;
+    font-family: inherit;
+    width: 100%;
+  }
+  .morph-card:hover { border-color: #333; background: #0f0f0f; }
+  .morph-card.sel-orange { border-color: #ff4d00 !important; background: #1a0800 !important; }
+  .morph-card.sel-blue   { border-color: #4da6ff !important; background: #00101a !important; }
+  .morph-card.sel-purple { border-color: #b44dff !important; background: #0f001a !important; }
+  .morph-card-title { font-size: 12px; font-weight: 500; margin-bottom: 2px; }
+  .morph-card-sub { font-size: 9px; color: #444; letter-spacing: 0.06em; }
+
+  /* PROMPT */
+  .prompt-section { margin-bottom: 16px; }
+  .prompt-label { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .tag {
+    display: inline-block;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border: 1px solid #1e1e1e;
+    color: #444;
+  }
+  .prompt-box {
+    background: #0f0f0f;
+    border: 1px solid #1e1e1e;
+    padding: 20px;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #b8a898;
+    min-height: 80px;
+    word-break: break-word;
+    white-space: pre-wrap;
+  }
+  .prompt-empty { color: #252525; font-style: italic; }
+
+  /* BUTTONS */
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn {
+    background: transparent;
+    border: 1px solid #2a2a2a;
+    color: #888;
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn:hover { border-color: #444; color: #e8e0d4; }
+  .btn-primary { background: #ff4d00; border-color: #ff4d00; color: #0a0a0a; font-weight: 500; }
+  .btn-primary:hover { background: #ff6620; border-color: #ff6620; color: #0a0a0a; }
+  .btn-primary:disabled { background: #3a1a00; border-color: #3a1a00; color: #5a3010; cursor: not-allowed; }
+
+  /* FOOTER */
+  .footer {
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid #111;
+    display: flex;
+    gap: 20px;
+  }
+  .footer span { font-size: 10px; color: #252525; }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .generating { animation: pulse 1s infinite; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-inner">
+    <div>
+      <div class="header-label">Prompt Builder</div>
+      <div class="header-title">
+        <span class="accent">VEO</span><br>STUDIO
+      </div>
+    </div>
+    <div>
+      <div class="counter-label">заполнено полей</div>
+      <div class="counter-val" id="counter">0<span>/9</span></div>
+    </div>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- AI BAR -->
+  <div class="ai-section">
+    <div class="section-label">◈ Автозаполнение — опиши идею</div>
+    <div class="ai-bar">
+      <input class="ai-input" id="ideaInput" placeholder="напр. девушка танцует в заброшенном театре, закат, медленно..." />
+      <button class="btn btn-primary" id="aiBtn" onclick="generateWithAI()" style="min-width:120px;border-radius:0">→ Заполнить</button>
+    </div>
+    <div class="ai-suggestion" id="aiSuggestion"></div>
+  </div>
+
+  <!-- FIELDS -->
+  <div class="fields-block">
+
+    <div class="field-row">
+      <div class="field-label-col"><span class="field-icon">◈</span><span class="field-name">Субъект</span></div>
+      <div class="field-input-wrap">
+        <textarea class="field-input" id="f_subject" rows="2" placeholder="Кто или что в кадре? Внешность, одежда, детали..." oninput="updatePrompt()"></textarea>
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field-label-col"><span class="field-icon">◉</span><span class="field-name">Действие</span></div>
+      <div class="field-input-wrap">
+        <textarea class="field-input" id="f_action" rows="1" placeholder="Что происходит? Движение, взаимодействие..." oninput="updatePrompt()"></textarea>
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field-label-col"><span class="field-icon">◫</span><span class="field-name">Сцена</span></div>
+      <div class="field-input-wrap">
+        <textarea class="field-input" id="f_scene" rows="2" placeholder="Где? Окружение, время суток, погода..." oninput="updatePrompt()"></textarea>
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field-label-col"><span class="field-icon">◎</span><span class="field-name">Камера</span></div>
+      <div class="field-input-wrap">
+        <select class="field-select" id="f_camera" onchange="updatePrompt()">
+          <option value="">Выбери движение камеры</option>
+          <option value="static shot">Статика</option>
+          <option value="slow pan left">Панорама влево</option>
+          <option value="slow pan right">Панорама вправо</option>
+          <option value="tilt up">Наклон вверх</option>
+          <option value="tilt down">Наклон вниз</option>
+          <option value="slow push in">Наезд (push in)</option>
+          <option value="slow pull out">Отъезд (pull out)</option>
+          <option value="orbit shot">Облёт вокруг объекта</option>
+          <option value="drone aerial shot">Аэросъёмка дрон</option>
+          <option value="low angle shot">Нижний угол</option>
+          <option value="high angle shot">Верхний угол</option>
+          <option value="handheld shaky">Ручная камера (дрожь)</option>
+          <option value="first person POV">Вид от первого лица</option>
+          <option value="tracking shot">Слежение за объектом</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field-label-col"><span class="field-icon">◌</span><span class="field-name">Движение</span></div>
+      <div class="field-input-wrap">
+        <select class="field-select" id="f_motion" onchange="updatePrompt()">
+          <option value="">Интенсивность движения</option>
+          <option value="slow motion">Замедленное (slow motion)</option>
+          <option value="normal speed">Обычная скорость</option>
+          <option value="fast paced">Динамичное</option>
+          <option value="time-lapse">Таймлапс</option>
+          <option value="subtle motion only">Минимальное движение</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field-label-col"><span class="field-icon">◧</span><span class="field-name">Стиль</span></div>
+      <div class="field-input-wrap">
+        <select class="field-select" id="f_style" onchange="updatePrompt()">
+          <option value="">Визуальный стиль</option>
+          <option value="cinematic film">Кинематограф</option>
+          <option value="documentary style">Документальный</option>
+          <option value="35mm film grain">35мм плёнка</option>
+          <option value="4K hyperrealistic">Гиперреализм 4K</option>
+          <option value="anime style">Аниме</option>
+          <option value="noir black and white">Чёрно-белый нуар</option>
+          <option value="vintage 16mm">Vintage 16мм</option>
+          <option value="music video aesthetic">Клип</option>
+          <option value="studio product shoot">Студийная съёмка</option>
+          <option value="neon cyberpunk">Неон / киберпанк</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field-label-col"><span class="field-icon">◐</span><span class="field-name">Настроение</span></div>
+      <div class="field-input-wrap">
+        <textarea class="field-input" id="f_mood" rows="1" placeholder="Атмосфера, эмоция, ощущение..." oninput="updatePrompt()"></textarea>
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field-label-col"><span class="field-icon">◑</span><span class="field-name">Хронометраж</span></div>
+      <div class="field-input-wrap">
+        <select class="field-select" id="f_duration" onchange="updatePrompt()">
+          <option value="">Длительность</option>
+          <option value="5 seconds">5 секунд</option>
+          <option value="8 seconds">8 секунд</option>
+        </select>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ASPECT RATIO -->
+  <div class="aspect-section">
+    <div class="section-label">◎ Соотношение сторон</div>
+    <div class="aspect-row" id="aspectRow">
+      <button class="aspect-btn active" onclick="setAspect(this, '16:9')">16:9</button>
+      <button class="aspect-btn" onclick="setAspect(this, '9:16')">9:16</button>
+      <button class="aspect-btn" onclick="setAspect(this, '1:1')">1:1</button>
+      <button class="aspect-btn" onclick="setAspect(this, '4:3')">4:3</button>
+      <button class="aspect-btn" onclick="setAspect(this, '21:9')">21:9</button>
+    </div>
+  </div>
+
+  <!-- MORPHING -->
+  <div class="morph-section">
+    <div class="morph-header">
+      <div class="section-label" style="margin-bottom:0">◌ Переход / Морфинг</div>
+      <button class="morph-reset" id="morphReset" onclick="resetMorph()">× сбросить</button>
+    </div>
+
+    <div class="morph-cat-label" style="color:#ff4d00">Операторские переходы</div>
+    <div class="morph-grid">
+      <button class="morph-card" data-id="push-in" data-group="orange" data-prompt="continuous push-in camera movement, flying through object to reveal new scene" onclick="selectMorph(this)">
+        <div class="morph-card-title">Пролёт вперёд</div><div class="morph-card-sub">Push-In</div>
+      </button>
+      <button class="morph-card" data-id="crane-up" data-group="orange" data-prompt="crane shot, camera moving up, ascending through clouds into new environment" onclick="selectMorph(this)">
+        <div class="morph-card-title">Подъём вверх</div><div class="morph-card-sub">Crane / Лифт</div>
+      </button>
+      <button class="morph-card" data-id="plunge-down" data-group="orange" data-prompt="camera plunging down through the floor, falling into a new underworld scene" onclick="selectMorph(this)">
+        <div class="morph-card-title">Провал вниз</div><div class="morph-card-sub">Под землю</div>
+      </button>
+      <button class="morph-card" data-id="zoom-morph" data-group="orange" data-prompt="macro zoom-in, seamless fractal transition into object details, infinite depth effect" onclick="selectMorph(this)">
+        <div class="morph-card-title">Матрёшка</div><div class="morph-card-sub">Зум-морфинг</div>
+      </button>
+    </div>
+
+    <div class="morph-cat-label" style="color:#4da6ff">Физические переходы</div>
+    <div class="morph-grid">
+      <button class="morph-card" data-id="natural" data-group="blue" data-prompt="natural interaction, physics-based movement, realistic seamless transition without VFX" onclick="selectMorph(this)">
+        <div class="morph-card-title">Естественное</div><div class="morph-card-sub">Natural Physical</div>
+      </button>
+      <button class="morph-card" data-id="slide-swap" data-group="blue" data-prompt="dynamic slide-swap, object exits frame left, new object enters frame right in synchronized motion" onclick="selectMorph(this)">
+        <div class="morph-card-title">Слайд-свап</div><div class="morph-card-sub">Slide-Swap</div>
+      </button>
+      <button class="morph-card" data-id="morph" data-group="blue" data-prompt="static camera, smooth physical morphing, seamless transformation from one object into another" onclick="selectMorph(this)">
+        <div class="morph-card-title">Плавный морфинг</div><div class="morph-card-sub">Object Morph</div>
+      </button>
+      <button class="morph-card" data-id="fly-through" data-group="blue" data-prompt="camera enters open mouth or window, flying through darkness, exiting into completely new environment" onclick="selectMorph(this)">
+        <div class="morph-card-title">Влёт внутрь</div><div class="morph-card-sub">Fly-Through</div>
+      </button>
+      <button class="morph-card" data-id="explosion" data-group="blue" data-prompt="object explodes into debris, revealing new object emerging from inside, epic explosion morph" onclick="selectMorph(this)">
+        <div class="morph-card-title">Взрыв-морфинг</div><div class="morph-card-sub">Explosion Morph</div>
+      </button>
+      <button class="morph-card" data-id="inception" data-group="blue" data-prompt="folding architecture, non-Euclidean geometry, bending reality, environment morph" onclick="selectMorph(this)">
+        <div class="morph-card-title">Архит. выворот</div><div class="morph-card-sub">Inception-эффект</div>
+      </button>
+    </div>
+
+    <div class="morph-cat-label" style="color:#b44dff">Текстурный и VFX-морфинг</div>
+    <div class="morph-grid">
+      <button class="morph-card" data-id="liquid" data-group="purple" data-prompt="melting, dissolving, turning into liquid chrome, evaporating into new form" onclick="selectMorph(this)">
+        <div class="morph-card-title">Смена состояния</div><div class="morph-card-sub">Liquid / Texture</div>
+      </button>
+      <button class="morph-card" data-id="lowpoly" data-group="purple" data-prompt="shattering into geometric 3D voxels, floating polygons reassembling into new shape" onclick="selectMorph(this)">
+        <div class="morph-card-title">Низкополи распад</div><div class="morph-card-sub">Low-Poly Shatter</div>
+      </button>
+      <button class="morph-card" data-id="bio" data-group="purple" data-prompt="overgrown with bioluminescent mycelium, weaving roots transforming into new object" onclick="selectMorph(this)">
+        <div class="morph-card-title">Биоорганика</div><div class="morph-card-sub">Мицелий / Лозы</div>
+      </button>
+      <button class="morph-card" data-id="smoke" data-group="purple" data-prompt="dissolving into thick colorful smoke, ink-in-water effect, swirling dust particles" onclick="selectMorph(this)">
+        <div class="morph-card-title">Дым и чернила</div><div class="morph-card-sub">Smoke / Ink</div>
+      </button>
+      <button class="morph-card" data-id="origami" data-group="purple" data-prompt="origami folding style, paper craft transformation, sharp paper creases" onclick="selectMorph(this)">
+        <div class="morph-card-title">Оригами</div><div class="morph-card-sub">Paper Fold</div>
+      </button>
+      <button class="morph-card" data-id="lighttrail" data-group="purple" data-prompt="light trails, motion blur transformation, freezing energy into solid object" onclick="selectMorph(this)">
+        <div class="morph-card-title">Световой шлейф</div><div class="morph-card-sub">Long Exposure</div>
+      </button>
+      <button class="morph-card" data-id="glitch" data-group="purple" data-prompt="digital glitch, cybernetic distortion, datamoshing, VHS artifacts" onclick="selectMorph(this)">
+        <div class="morph-card-title">Глитч-мутация</div><div class="morph-card-sub">Digital Glitch</div>
+      </button>
+    </div>
+  </div>
+
+  <!-- PROMPT OUTPUT -->
+  <div class="prompt-section">
+    <div class="prompt-label">
+      <div class="section-label" style="margin-bottom:0">◉ Готовый промпт</div>
+      <span class="tag" id="enTag" style="display:none">EN</span>
+    </div>
+    <div class="prompt-box" id="promptBox">
+      <span class="prompt-empty">заполни поля выше — промпт соберётся здесь</span>
+    </div>
+  </div>
+
+  <!-- ACTIONS -->
+  <div class="actions">
+    <button class="btn btn-primary" id="copyBtn" onclick="copyPrompt()" disabled>Копировать промпт</button>
+    <button class="btn" onclick="clearAll()">Очистить</button>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <span>Google Veo — промпты пишутся на английском</span>
+    <span>·</span>
+    <span>порядок полей соответствует структуре промпта</span>
+  </div>
+
+</div>
+
+<script>
+  let selectedAspect = "16:9";
+  let selectedMorphId = null;
+  let selectedMorphPrompt = null;
+
+  const FIELDS = ["f_style","f_camera","f_subject","f_action","f_scene","f_mood","f_motion","f_duration"];
+
+  function getVal(id) {
+    const el = document.getElementById(id);
+    return el ? el.value.trim() : "";
+  }
+
+  function assemblePrompt() {
+    const parts = [];
+    const style    = getVal("f_style");
+    const camera   = getVal("f_camera");
+    const subject  = getVal("f_subject");
+    const action   = getVal("f_action");
+    const scene    = getVal("f_scene");
+    const mood     = getVal("f_mood");
+    const motion   = getVal("f_motion");
+    const duration = getVal("f_duration");
+
+    if (style)    parts.push(style);
+    if (camera)   parts.push(camera);
+    if (subject)  parts.push(subject);
+    if (action)   parts.push(action);
+    if (scene)    parts.push(scene);
+    if (mood)     parts.push(mood + " atmosphere");
+    if (motion)   parts.push(motion);
+    if (selectedMorphPrompt) parts.push(selectedMorphPrompt);
+    if (duration) parts.push(duration + " video");
+    if (selectedAspect) parts.push("aspect ratio " + selectedAspect);
+
+    return parts.join(", ");
+  }
+
+  function updatePrompt() {
+    const prompt = assemblePrompt();
+    const box = document.getElementById("promptBox");
+    const copyBtn = document.getElementById("copyBtn");
+    const enTag = document.getElementById("enTag");
+
+    if (prompt) {
+      box.textContent = prompt;
+      copyBtn.disabled = false;
+      enTag.style.display = "inline-block";
+    } else {
+      box.innerHTML = '<span class="prompt-empty">заполни поля выше — промпт соберётся здесь</span>';
+      copyBtn.disabled = true;
+      enTag.style.display = "none";
+    }
+
+    // update counter
+    let count = 0;
+    ["f_subject","f_action","f_scene","f_camera","f_motion","f_style","f_mood","f_duration"].forEach(id => {
+      if (getVal(id)) count++;
+    });
+    if (selectedMorphId) count++;
+
+    const counter = document.getElementById("counter");
+    counter.innerHTML = count + '<span>/9</span>';
+    counter.className = "counter-val" + (count > 0 ? " active" : "");
+    document.getElementById("progress").style.width = (count / 9 * 100) + "%";
+  }
+
+  function setAspect(btn, val) {
+    document.querySelectorAll(".aspect-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    selectedAspect = val;
+    updatePrompt();
+  }
+
+  function selectMorph(btn) {
+    const id = btn.dataset.id;
+    if (selectedMorphId === id) {
+      resetMorph();
+      return;
+    }
+    document.querySelectorAll(".morph-card").forEach(c => {
+      c.classList.remove("sel-orange","sel-blue","sel-purple");
+      c.querySelector(".morph-card-title").style.color = "#e8e0d4";
+    });
+    const group = btn.dataset.group;
+    const cls = group === "orange" ? "sel-orange" : group === "blue" ? "sel-blue" : "sel-purple";
+    const color = group === "orange" ? "#ff4d00" : group === "blue" ? "#4da6ff" : "#b44dff";
+    btn.classList.add(cls);
+    btn.querySelector(".morph-card-title").style.color = color;
+    selectedMorphId = id;
+    selectedMorphPrompt = btn.dataset.prompt;
+    document.getElementById("morphReset").style.display = "block";
+    updatePrompt();
+  }
+
+  function resetMorph() {
+    document.querySelectorAll(".morph-card").forEach(c => {
+      c.classList.remove("sel-orange","sel-blue","sel-purple");
+      c.querySelector(".morph-card-title").style.color = "#e8e0d4";
+    });
+    selectedMorphId = null;
+    selectedMorphPrompt = null;
+    document.getElementById("morphReset").style.display = "none";
+    updatePrompt();
+  }
+
+  function copyPrompt() {
+    const prompt = assemblePrompt();
+    if (!prompt) return;
+    const btn = document.getElementById("copyBtn");
+    try {
+      const el = document.createElement("textarea");
+      el.value = prompt;
+      el.style.cssText = "position:fixed;opacity:0;top:0;left:0";
+      document.body.appendChild(el);
+      el.focus();
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+      btn.textContent = "✓ Скопировано";
+      setTimeout(() => btn.textContent = "Копировать промпт", 2000);
+    } catch {
+      navigator.clipboard?.writeText(prompt).then(() => {
+        btn.textContent = "✓ Скопировано";
+        setTimeout(() => btn.textContent = "Копировать промпт", 2000);
+      });
+    }
+  }
+
+  function clearAll() {
+    ["f_subject","f_action","f_scene","f_mood"].forEach(id => document.getElementById(id).value = "");
+    ["f_camera","f_motion","f_style","f_duration"].forEach(id => document.getElementById(id).value = "");
+    document.getElementById("ideaInput").value = "";
+    document.getElementById("aiSuggestion").style.display = "none";
+    resetMorph();
+    updatePrompt();
+  }
+
+  async function generateWithAI() {
+    const idea = document.getElementById("ideaInput").value.trim();
+    if (!idea) return;
+    const btn = document.getElementById("aiBtn");
+    const sug = document.getElementById("aiSuggestion");
+    btn.textContent = "Думаю...";
+    btn.disabled = true;
+    btn.classList.add("generating");
+    sug.style.display = "none";
+
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1000,
+          system: `Ты — эксперт по созданию промптов для Google Veo (генератор видео).
+Пользователь описывает идею видео на русском. Разбери её на компоненты и верни ТОЛЬКО JSON без markdown и пояснений.
+Формат:
+{"subject":"...","action":"...","scene":"...","camera":"одно из: static shot/slow pan left/slow pan right/tilt up/tilt down/slow push in/slow pull out/orbit shot/drone aerial shot/low angle shot/high angle shot/handheld shaky/first person POV/tracking shot","motion":"одно из: slow motion/normal speed/fast paced/time-lapse/subtle motion only","style":"одно из: cinematic film/documentary style/35mm film grain/4K hyperrealistic/anime style/noir black and white/vintage 16mm/music video aesthetic/studio product shoot/neon cyberpunk","mood":"атмосфера по-английски одной фразой","duration":"одно из: 5 seconds/8 seconds"}
+Все значения на английском.`,
+          messages: [{ role: "user", content: idea }]
+        })
+      });
+      const data = await res.json();
+      const text = data.content?.find(b => b.type === "text")?.text || "";
+      const parsed = JSON.parse(text.replace(/```json|```/g, "").trim());
+
+      if (parsed.subject)  document.getElementById("f_subject").value  = parsed.subject;
+      if (parsed.action)   document.getElementById("f_action").value   = parsed.action;
+      if (parsed.scene)    document.getElementById("f_scene").value    = parsed.scene;
+      if (parsed.camera)   document.getElementById("f_camera").value   = parsed.camera;
+      if (parsed.motion)   document.getElementById("f_motion").value   = parsed.motion;
+      if (parsed.style)    document.getElementById("f_style").value    = parsed.style;
+      if (parsed.mood)     document.getElementById("f_mood").value     = parsed.mood;
+      if (parsed.duration) document.getElementById("f_duration").value = parsed.duration;
+
+      sug.textContent = "Готово — поля заполнены. Редактируй как хочешь.";
+      sug.style.display = "block";
+      updatePrompt();
+    } catch {
+      sug.textContent = "Что-то пошло не так. Попробуй ещё раз.";
+      sug.style.display = "block";
+    }
+
+    btn.textContent = "→ Заполнить";
+    btn.disabled = false;
+    btn.classList.remove("generating");
+  }
+
+  document.getElementById("ideaInput").addEventListener("keydown", e => {
+    if (e.key === "Enter") generateWithAI();
+  });
+</script>
+</body>
+</html>
